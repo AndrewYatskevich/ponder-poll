@@ -17,7 +17,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", default="secret_key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -65,8 +65,12 @@ WSGI_APPLICATION = "ponder_poll.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": os.getenv("DB_ENGINE", default="django.db.backends.sqlite3"),
+        "NAME": os.getenv("POSTGRES_DB", default=BASE_DIR / "db.sqlite3"),
+        "USER": os.getenv("POSTGRES_USER", default="admin"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", default="PASSWORD"),
+        "HOST": os.getenv("DB_HOST", default="localhost"),
+        "PORT": os.getenv("DB_PORT", default="5432"),
     }
 }
 
