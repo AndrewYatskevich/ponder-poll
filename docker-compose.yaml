@@ -1,0 +1,26 @@
+version: "3.8"
+name: ponder-poll
+
+services:
+  postgres-db:
+    image: postgres:15.4-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  ponder-poll:
+    build: .
+    volumes:
+      - ./ponder_poll:/code
+    environment:
+      - DB_HOST=postgres-db
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres-db
+
+volumes:
+  postgres-db:

@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "ponder-poll"
+version = "0.1.0"
+description = ""
+authors = ["Andrew Yatskevich"]
+readme = "README.md"
+packages = [{include = "ponder_poll"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django = "4.2.7"
+python-dotenv = "^1.0.0"
+psycopg2-binary = "^2.9.9"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests"]
+line_length = 79
+
+[tool.black]
+line_length = 79
