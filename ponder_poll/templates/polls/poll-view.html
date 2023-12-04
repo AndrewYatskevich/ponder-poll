@@ -11,10 +11,17 @@
   {% for option in object.options.all %}
   <div class="d-flex justify-content-center">
     <p>{{ option.text }}</p>
+    {% if voted %}
+    <p class="ms-2">votes: {{ option.votes_number}}</p>
+    {% if option == chosen_option %}
+    <p class="ms-1">Chosen option</p>
+    {% endif %}
+    {% else %}
     <form action="{% url 'polls:option-vote' pk=option.id %}" method="post">
       {% csrf_token %}
       <input type="submit" value="Vote">
     </form>
+    {% endif %}
   </div>
   {% endfor %}
   <p>Total votes: {{ object.total_votes }}</p>
