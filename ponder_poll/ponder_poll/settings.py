@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -128,4 +129,14 @@ CACHES = {
     }
 }
 
+CELERY_BEAT_SCHEDULE = {
+    "poll_daily_report": {
+        "task": "polls.tasks.poll_daily_report",
+        "schedule": crontab(minute="0", hour="0"),
+    },
+}
+
 API_NINJAS_KEY = os.getenv("API_NINJAS_KEY", "api_key")
+
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
