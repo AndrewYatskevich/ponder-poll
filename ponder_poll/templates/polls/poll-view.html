@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container text-center">
+  <div class="d-flex justify-content-center">
+    <p>Poll: {{ object.text }}</p>
+    <form action="{% url 'polls:poll-edit' pk=object.id %}" method="get">
+      <input type="submit" value="Edit">
+    </form>
+  </div>
+  <p>OPTIONS</p>
+  {% for option in object.options.all %}
+  <div class="d-flex justify-content-center">
+    <p>{{ option.text }}</p>
+    <form action="{% url 'polls:option-vote' pk=option.id %}" method="post">
+      {% csrf_token %}
+      <input type="submit" value="Vote">
+    </form>
+  </div>
+  {% endfor %}
+  <p>Total votes: {{ object.total_votes }}</p>
+</div>
+{% endblock %}
