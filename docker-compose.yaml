@@ -11,16 +11,39 @@ services:
     env_file:
       - ./.env
 
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  celery:
+    extends:
+      file: common.yaml
+      service: app
+    command: celery -A ponder_poll.celery worker -l info
+    depends_on:
+      - redis
+
+  celery-beat:
+    extends:
+      file: common.yaml
+      service: app
+    command: celery -A ponder_poll.celery beat -l info
+    depends_on:
+      - redis
+      - celery
+
   ponder-poll:
-    build: .
-    volumes:
-      - ./ponder_poll:/code
-    environment:
-      - DB_HOST=postgres-db
-    env_file:
-      - ./.env
+    extends:
+      file: common.yaml
+      service: app
+    ports:
+      - "8000:8000"
+    restart: always
     depends_on:
       - postgres-db
+      - celery
+      - celery-beat
 
 volumes:
   postgres-db:
