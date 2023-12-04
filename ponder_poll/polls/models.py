@@ -11,6 +11,12 @@ class Poll(models.Model):
     text = models.CharField(max_length=200, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ("-id",)
+
+    def __str__(self):
+        return self.text
+
     @property
     def total_votes(self):
         votes = Poll.objects.filter(pk=self.pk).aggregate(
@@ -26,11 +32,19 @@ class Option(models.Model):
     text = models.CharField(max_length=200)
 
     class Meta:
+        ordering = ("-id",)
         constraints = [
             models.UniqueConstraint(
                 fields=("poll", "text"), name="unique_option"
             )
         ]
+
+    def __str__(self):
+        return self.text
+
+    @property
+    def votes_number(self):
+        return self.votes.count()
 
 
 class Vote(models.Model):

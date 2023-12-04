@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>polls.views &mdash; PonderPoll Documentation 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PonderPoll Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ponder_poll</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PonderPoll Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">polls.views</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for polls.views</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">import</span> <span class="nn">aiohttp</span>
+<span class="kn">from</span> <span class="nn">asgiref.sync</span> <span class="kn">import</span> <span class="n">async_to_sync</span>
+<span class="kn">from</span> <span class="nn">django.conf</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">django.contrib.auth.decorators</span> <span class="kn">import</span> <span class="n">login_required</span>
+<span class="kn">from</span> <span class="nn">django.contrib.auth.mixins</span> <span class="kn">import</span> <span class="n">LoginRequiredMixin</span>
+<span class="kn">from</span> <span class="nn">django.core.cache</span> <span class="kn">import</span> <span class="n">cache</span>
+<span class="kn">from</span> <span class="nn">django.shortcuts</span> <span class="kn">import</span> <span class="n">redirect</span>
+<span class="kn">from</span> <span class="nn">django.urls</span> <span class="kn">import</span> <span class="n">reverse</span><span class="p">,</span> <span class="n">reverse_lazy</span>
+<span class="kn">from</span> <span class="nn">django.views.generic</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CreateView</span><span class="p">,</span>
+    <span class="n">DeleteView</span><span class="p">,</span>
+    <span class="n">DetailView</span><span class="p">,</span>
+    <span class="n">ListView</span><span class="p">,</span>
+    <span class="n">UpdateView</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">polls.forms</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PollForm</span><span class="p">,</span>
+    <span class="n">PollOptionCreateFormSet</span><span class="p">,</span>
+    <span class="n">PollOptionUpdateFormSet</span><span class="p">,</span>
+    <span class="n">VoteForm</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">polls.models</span> <span class="kn">import</span> <span class="n">Option</span><span class="p">,</span> <span class="n">Poll</span>
+
+
+<div class="viewcode-block" id="PollCreateView">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollCreateView">[docs]</a>
+<span class="k">class</span> <span class="nc">PollCreateView</span><span class="p">(</span><span class="n">LoginRequiredMixin</span><span class="p">,</span> <span class="n">CreateView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a poll and up to 10 options for it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">form_class</span> <span class="o">=</span> <span class="n">PollForm</span>
+    <span class="n">template_name</span> <span class="o">=</span> <span class="s2">&quot;polls/poll-create-edit.html&quot;</span>
+
+<div class="viewcode-block" id="PollCreateView.get_success_url">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollCreateView.get_success_url">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_success_url</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">reverse</span><span class="p">(</span><span class="s2">&quot;polls:poll-view&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pk&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">id</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="PollCreateView.get_context_data">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollCreateView.get_context_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_context_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_context_data</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">:</span>
+            <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PollOptionCreateFormSet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PollOptionCreateFormSet</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+
+<div class="viewcode-block" id="PollCreateView.form_valid">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollCreateView.form_valid">[docs]</a>
+    <span class="k">def</span> <span class="nf">form_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_context_data</span><span class="p">()</span>
+        <span class="n">formset</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">formset</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+            <span class="n">poll</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">commit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">poll</span><span class="o">.</span><span class="n">owner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">user</span>
+            <span class="n">poll</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">object</span> <span class="o">=</span> <span class="n">poll</span>
+            <span class="n">formset</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span>
+            <span class="n">formset</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_success_url</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">form_invalid</span><span class="p">(</span><span class="n">form</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PollListView">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollListView">[docs]</a>
+<span class="k">class</span> <span class="nc">PollListView</span><span class="p">(</span><span class="n">ListView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return list of polls and some facts from third party API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Poll</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Poll</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">prefetch_related</span><span class="p">(</span><span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="s2">&quot;options__votes&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">template_name</span> <span class="o">=</span> <span class="s2">&quot;polls/index.html&quot;</span>
+    <span class="n">paginate_by</span> <span class="o">=</span> <span class="mi">9</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_get_fact</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="n">fact</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">fact</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;fact&quot;</span><span class="p">]</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_get_facts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">):</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;X-Api-Key&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">API_NINJAS_KEY</span><span class="p">}</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">amount</span><span class="p">):</span>
+                <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_get_fact</span><span class="p">(</span>
+                            <span class="n">session</span><span class="p">,</span> <span class="s2">&quot;https://api.api-ninjas.com/v1/facts&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">facts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">actions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">facts</span>
+
+<div class="viewcode-block" id="PollListView.get_context_data">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollListView.get_context_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_context_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">object_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_context_data</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;facts&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;facts&quot;</span><span class="p">,</span> <span class="n">async_to_sync</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_facts</span><span class="p">)(</span><span class="mi">3</span><span class="p">),</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">context</span><span class="p">[</span><span class="s2">&quot;facts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;facts&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PollDetailView">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollDetailView">[docs]</a>
+<span class="k">class</span> <span class="nc">PollDetailView</span><span class="p">(</span><span class="n">LoginRequiredMixin</span><span class="p">,</span> <span class="n">DetailView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the poll by the poll id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">template_name</span> <span class="o">=</span> <span class="s2">&quot;polls/poll-view.html&quot;</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Poll</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">prefetch_related</span><span class="p">(</span><span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="s2">&quot;options__votes&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="PollUpdateView">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollUpdateView">[docs]</a>
+<span class="k">class</span> <span class="nc">PollUpdateView</span><span class="p">(</span><span class="n">LoginRequiredMixin</span><span class="p">,</span> <span class="n">UpdateView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update the poll and up to 10 of its options.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Poll</span>
+    <span class="n">form_class</span> <span class="o">=</span> <span class="n">PollForm</span>
+    <span class="n">template_name</span> <span class="o">=</span> <span class="s2">&quot;polls/poll-create-edit.html&quot;</span>
+
+<div class="viewcode-block" id="PollUpdateView.get_success_url">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollUpdateView.get_success_url">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_success_url</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">reverse</span><span class="p">(</span><span class="s2">&quot;polls:poll-view&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pk&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">id</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="PollUpdateView.get_context_data">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollUpdateView.get_context_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_context_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_context_data</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">:</span>
+            <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PollOptionUpdateFormSet</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">POST</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PollOptionUpdateFormSet</span><span class="p">(</span><span class="n">instance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">object</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+
+<div class="viewcode-block" id="PollUpdateView.form_valid">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollUpdateView.form_valid">[docs]</a>
+    <span class="k">def</span> <span class="nf">form_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">form</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_context_data</span><span class="p">()</span>
+        <span class="n">formset</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;formset&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">formset</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+            <span class="n">formset</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_success_url</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">form_invalid</span><span class="p">(</span><span class="n">form</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PollDeleteView">
+<a class="viewcode-back" href="../../polls.html#polls.views.PollDeleteView">[docs]</a>
+<span class="k">class</span> <span class="nc">PollDeleteView</span><span class="p">(</span><span class="n">LoginRequiredMixin</span><span class="p">,</span> <span class="n">DeleteView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete the poll by the poll id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Poll</span>
+    <span class="n">success_url</span> <span class="o">=</span> <span class="n">reverse_lazy</span><span class="p">(</span><span class="s2">&quot;polls:index&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="vote_option">
+<a class="viewcode-back" href="../../polls.html#polls.views.vote_option">[docs]</a>
+<span class="nd">@login_required</span>
+<span class="k">def</span> <span class="nf">vote_option</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">pk</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a vote for an option by option id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">form</span> <span class="o">=</span> <span class="n">VoteForm</span><span class="p">()</span>
+    <span class="n">vote</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">commit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">vote</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span>
+    <span class="n">option</span> <span class="o">=</span> <span class="n">Option</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="n">pk</span><span class="p">)</span>
+    <span class="n">vote</span><span class="o">.</span><span class="n">option</span> <span class="o">=</span> <span class="n">option</span>
+    <span class="n">vote</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span>
+        <span class="n">reverse_lazy</span><span class="p">(</span><span class="s2">&quot;polls:poll-view&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pk&quot;</span><span class="p">:</span> <span class="n">option</span><span class="o">.</span><span class="n">poll</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Andrew Yatskevich.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

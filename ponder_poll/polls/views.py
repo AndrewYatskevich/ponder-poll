@@ -26,6 +26,10 @@ from polls.models import Option, Poll
 
 
 class PollCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create a poll and up to 10 options for it.
+    """
+
     form_class = PollForm
     template_name = "polls/poll-create-edit.html"
 
@@ -56,6 +60,10 @@ class PollCreateView(LoginRequiredMixin, CreateView):
 
 
 class PollListView(ListView):
+    """
+    Return list of polls and some facts from third party API.
+    """
+
     model = Poll
     queryset = Poll.objects.prefetch_related("options", "options__votes").all()
     template_name = "polls/index.html"
@@ -92,11 +100,19 @@ class PollListView(ListView):
 
 
 class PollDetailView(LoginRequiredMixin, DetailView):
+    """
+    Return the poll by the poll id.
+    """
+
     template_name = "polls/poll-view.html"
     queryset = Poll.objects.prefetch_related("options", "options__votes").all()
 
 
 class PollUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Update the poll and up to 10 of its options.
+    """
+
     model = Poll
     form_class = PollForm
     template_name = "polls/poll-create-edit.html"
@@ -125,12 +141,19 @@ class PollUpdateView(LoginRequiredMixin, UpdateView):
 
 
 class PollDeleteView(LoginRequiredMixin, DeleteView):
+    """
+    Delete the poll by the poll id.
+    """
+
     model = Poll
     success_url = reverse_lazy("polls:index")
 
 
 @login_required
 def vote_option(request, pk):
+    """
+    Create a vote for an option by option id.
+    """
     form = VoteForm()
     vote = form.save(commit=False)
     vote.user = request.user

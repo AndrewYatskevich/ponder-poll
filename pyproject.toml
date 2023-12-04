@@ -18,6 +18,8 @@ redis = "^5.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
+sphinx = "^7.2.6"
+sphinx-rtd-theme = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
