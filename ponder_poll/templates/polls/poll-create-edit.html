@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="" method="post">
+  <p>Poll</p>
+  {% csrf_token %}
+  {{ form.as_p }}
+  {{formset.management_form}}
+  <p>Options</p>
+  {% for option in formset %}
+  {{ option.as_p }}
+  {% endfor %}
+  <input type="submit" value="Submit">
+</form>
+{% endblock %}

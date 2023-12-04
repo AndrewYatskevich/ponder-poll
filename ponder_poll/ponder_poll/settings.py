@@ -120,3 +120,12 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-suffix",
+    }
+}
+
+API_NINJAS_KEY = os.getenv("API_NINJAS_KEY", "api_key")
