@@ -22,7 +22,7 @@ from polls.forms import (
     PollOptionUpdateFormSet,
     VoteForm,
 )
-from polls.models import Option, Poll
+from polls.models import Option, Poll, Vote
 
 
 class PollCreateView(LoginRequiredMixin, CreateView):
@@ -106,6 +106,17 @@ class PollDetailView(LoginRequiredMixin, DetailView):
 
     template_name = "polls/poll-view.html"
     queryset = Poll.objects.prefetch_related("options", "options__votes").all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["voted"] = False
+        vote = Vote.objects.filter(
+            user=self.request.user, option__poll=kwargs["object"]
+        )
+        if vote:
+            context["voted"] = True
+            context["chosen_option"] = vote.first().option
+        return context
 
 
 class PollUpdateView(LoginRequiredMixin, UpdateView):

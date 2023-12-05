@@ -40,7 +40,7 @@ The following functionality has been implemented:
 - User registration and authentication
 - CRUD operations with polls and their options
 - Ability to vote for the desired option in a poll
--
+
 To learn about all possibilities, check out the documentation please:
 - Move to docs folder `cd ponder_poll/docs/_build/html/`
 - Open the index.html in your browser
