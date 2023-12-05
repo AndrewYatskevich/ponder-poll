@@ -145,6 +145,7 @@ class PollUpdateView(LoginRequiredMixin, UpdateView):
         context = self.get_context_data()
         formset = context["formset"]
         if formset.is_valid():
+            form.save()
             formset.save()
             return redirect(self.get_success_url())
         else:
