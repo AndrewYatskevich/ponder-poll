@@ -22,7 +22,7 @@ Check out docker documentation to install:
 
 ### Move to the root folder of the project
 
-`cd ponder_poll/`
+`cd ponder-poll/`
 
 ### Create the .env file and fill it out
 
